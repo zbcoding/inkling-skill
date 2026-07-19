@@ -66,6 +66,11 @@ tinker-docs.thinkingmachines.ai/cookbook/inkling/
 - Install the extra: `pip install "tinker-cookbook[inkling]"` (pulls
   `tml-renderers`, Thinking Machines' rendering package; needs PyTorch ≥ 2.10
   and CPython 3.11+, Linux/macOS x86_64/aarch64).
+- Dependency-footprint warning: because vision/audio encoding happens
+  client-side in `tml-renderers`, the torch ≥ 2.10 + Python 3.11 requirement
+  lands on YOUR box — a text-only base needs none of it. In a minimal
+  container, budget that environment cost (multi-GB torch install, image
+  size, cold-start) alongside token costs.
 - **Thinking effort**: `effort=` float kwarg, `0.0 <= effort < 1.0`, passed to
   `renderer.build_generation_prompt(messages, effort=...)` (and
   `build_supervised_example` for training). Presets: none 0.0, minimal 0.1,
