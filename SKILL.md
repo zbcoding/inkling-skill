@@ -50,21 +50,52 @@ message, _ = renderer.parse_response(resp.sequences[0].tokens)
 ```
 
 - Renderers differ per model family (GPT-OSS uses the `gpt_oss`/Harmony
-  renderer). Always resolve via `model_info`, never hardcode.
-- Inkling has controllable reasoning effort (0.0–0.99), but the exact API
-  surface for passing it (renderer kwarg vs SamplingParams vs model-level)
-  is undocumented — verify in the Tinker docs/console before relying on it.
+  renderer; Inkling uses the TML renderer). Always resolve via `model_info`,
+  never hardcode.
 - Verify exact `base_model=` ID strings against the Tinker model catalog
   (tinker-docs.thinkingmachines.ai/tinker/models/) — mismatched IDs fail at
   the SDK level.
-- Keep reasoning effort minimal for structured output tasks; effort scales
-  sample-token spend directly.
-- Inkling accepts vision input — usable for captioning product/note images into
-  text that then feeds tagging and embeddings. Cheaper alternative: run the
-  captioning once through a small local or free-tier VLM; store captions as a
-  text column and treat them as ordinary source text thereafter. Validate
-  caption quality on a sample first — bad captions poison downstream tagging
-  and embeddings silently.
+
+## Inkling specifics (vs generic bases like gpt-oss)
+
+What `thinkingmachines/Inkling` gives you that gpt-oss-class bases don't:
+controllable reasoning effort, image AND audio input, and first-class tool
+calling — all through one renderer. Docs:
+tinker-docs.thinkingmachines.ai/cookbook/inkling/
+
+- Install the extra: `pip install "tinker-cookbook[inkling]"` (pulls
+  `tml-renderers`, Thinking Machines' rendering package; needs PyTorch ≥ 2.10
+  and CPython 3.11+, Linux/macOS x86_64/aarch64).
+- **Thinking effort**: `effort=` float kwarg, `0.0 <= effort < 1.0`, passed to
+  `renderer.build_generation_prompt(messages, effort=...)` (and
+  `build_supervised_example` for training). Presets: none 0.0, minimal 0.1,
+  low 0.2, medium 0.7, high 0.9 (default), xhigh 0.99. Higher effort
+  encourages (doesn't guarantee) more reasoning and needs a larger
+  `max_tokens` budget; `effort=0.0` conditions toward no reasoning but
+  doesn't hard-disable it. Keep effort low for structured-output tasks —
+  effort scales sample-token spend directly.
+- **SFT rule**: generate rollouts at a fixed effort, then render the training
+  data with the *same* effort so training matches sampling token-for-token.
+  Docs recommend sweeping learning rate × effort when adapting Inkling.
+- **Images**: PNG/JPEG only; local paths, `file://`, or base64 data URIs —
+  HTTP/cloud URLs are NOT fetched, download first. OpenAI-style
+  `image_url` parts (base64) auto-derive dimensions; native
+  `chat.ImagePointer` needs explicit width/height.
+- **Audio**: WAV/MP3/FLAC; same local/base64-only rule. WAV metadata is read
+  from the header; MP3/FLAC need explicit `num_frames` and `sample_rate`.
+  Encoding to mel features happens client-side in `tml-renderers`. Good for
+  transcription, audio Q&A, and extraction from recordings.
+- **Messages**: the renderer accepts ordinary OpenAI-style role/content dicts
+  or native `tml_renderers.chat` objects; tool declarations use `ToolSpec`
+  via `renderer.create_conversation_prefix_with_tools(...)`, tool results are
+  appended as standard `{"role": "tool", ...}` messages.
+- Cheaper alternative for one-off captioning: run it once through a small
+  local or free-tier VLM; store captions as a text column and treat them as
+  ordinary source text thereafter. Validate caption quality on a sample
+  first — bad captions poison downstream tagging and embeddings silently.
+- When to pick Inkling over a cheaper base: you need vision/audio in the same
+  pipeline, tool calls, or effort control; otherwise a 20B-class base is
+  cheaper to sample and small enough to serve locally after SFT.
 
 ## pgvector setup (per project)
 
