@@ -16,6 +16,7 @@ Then invoke with `/inkling` in Claude Code.
 
 - A cost ladder: free-tier LLM chain → local embeddings + pgvector → Tinker base-model sampling → one-time SFT, stopping at the first rung that meets accuracy needs
 - Tinker SDK sampling (Thinking Machines base models like `thinkingmachines/Inkling`), billing levers (cached prefill), and model selection
+- Inkling-specific features vs generic bases (GPT-OSS etc.): controllable thinking effort (`effort=` 0.0–0.99), image (PNG/JPEG) and audio (WAV/MP3/FLAC) input via the `tml-renderers` package, tool calling, and the effort-matching rule for SFT
 - Idempotent pgvector migrations, e5 embedding conventions, backfill patterns
 - RAG few-shot injection for tagging/translation/classification
 - Training-data curation heuristics and verification habits
