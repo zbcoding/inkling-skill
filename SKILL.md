@@ -146,5 +146,5 @@ SFT rather than hand-cleaning.
   shipping the migration.
 - After backfill, prove search works with one nearest-neighbor query on a
   known item, not just row counts.
-- Never print DB credentials off the host; read them from the container env at
-  use time.
+- Never print or commit DB credentials; read them from the environment or
+  secret store at use time.
